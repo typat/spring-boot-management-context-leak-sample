@@ -1,0 +1,37 @@
+plugins {
+	id 'java'
+}
+
+repositories {
+	mavenCentral()
+}
+
+def bootVersion = providers.gradleProperty('bootVersion').getOrElse('4.1.2')
+
+dependencies {
+	implementation platform("org.springframework.boot:spring-boot-dependencies:${bootVersion}")
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.release = 17
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	// A small cache so that the test context framework evicts contexts it has paused.
+	systemProperty 'spring.test.context.cache.maxSize', '2'
+	def pause = providers.gradleProperty('pause')
+	if (pause.isPresent()) {
+		systemProperty 'spring.test.context.cache.pause', pause.get()
+	}
+	testLogging {
+		events 'passed', 'failed'
+		showStandardStreams = true
+		exceptionFormat = 'full'
+	}
+	outputs.upToDateWhen { false }
+}
